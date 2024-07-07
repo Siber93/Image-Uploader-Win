@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<JUCERPROJECT id="Gs2Heb" name="SystemID Image Uploader" projectType="guiapp"
+              useAppConfig="0" addUsingNamespaceToJuceHeader="0" displaySplashScreen="1"
+              jucerFormatVersion="1" headerPath="..\..\opencv\build\include"
+              defines="JUCE_USE_CAMERA=1">
+  <MAINGROUP id="j29GVu" name="SystemID Image Uploader">
+    <GROUP id="{573CCC1C-1C41-E0C6-8D9C-B6D5D6E9AA42}" name="Source">
+      <FILE id="vkD9AL" name="Camera.h" compile="0" resource="0" file="Source/Camera.h"/>
+      <FILE id="bvg6Hn" name="Settings.h" compile="0" resource="0" file="Source/Settings.h"/>
+      <FILE id="PCABdH" name="ftplib.cpp" compile="1" resource="0" file="Source/ftplib.cpp"/>
+      <FILE id="CTXqZ4" name="ftplib.h" compile="0" resource="0" file="Source/ftplib.h"/>
+      <FILE id="IfAV4C" name="Network.h" compile="0" resource="0" file="Source/Network.h"/>
+      <FILE id="uBPyNT" name="ImageUploaderService.cpp" compile="1" resource="0"
+            file="Source/ImageUploaderService.cpp"/>
+      <FILE id="yTwA6U" name="ImageUploaderService.h" compile="0" resource="0"
+            file="Source/ImageUploaderService.h"/>
+      <FILE id="UP5gOS" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
+      <FILE id="EZS627" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
+      <FILE id="DphF0p" name="MainComponent.cpp" compile="1" resource="0"
+            file="Source/MainComponent.cpp"/>
+    </GROUP>
+  </MAINGROUP>
+  <MODULES>
+    <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_events" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_video" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+  </MODULES>
+  <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>
+  <EXPORTFORMATS>
+    <VS2022 targetFolder="Builds/VisualStudio2022" extraDefs="NOLFS; NOSSL"
+            externalLibraries="..\..\opencv\build\x64\vc16\lib\opencv_world490.lib&#10;..\..\opencv\build\x64\vc16\lib\opencv_world490d.lib">
+      <CONFIGURATIONS>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="SystemID Image Uploader"
+                       useRuntimeLibDLL="0"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="SystemID Image Uploader"
+                       useRuntimeLibDLL="0"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_core" path="../../../../Program Files/JUCE/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../../../../Program Files/JUCE/modules"/>
+        <MODULEPATH id="juce_events" path="../../../../Program Files/JUCE/modules"/>
+        <MODULEPATH id="juce_graphics" path="../../../../Program Files/JUCE/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../../../../Program Files/JUCE/modules"/>
+        <MODULEPATH id="juce_video" path="../../../../Program Files/JUCE/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="../../../../Program Files/JUCE/modules"/>
+      </MODULEPATHS>
+    </VS2022>
+  </EXPORTFORMATS>
+</JUCERPROJECT>
