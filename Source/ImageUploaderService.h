@@ -22,6 +22,14 @@ public:
     // Mutex to access local image files
     std::mutex filesMtx;
 
+    /// <summary>
+    /// Reset the barcode file content
+    /// </summary>
+    void reset()
+    {
+        ftpBarcodeFileContent = "";
+    }
+
 private:
     // Images queue to be uploaded on the FTP
     std::queue<juce::Image> imagToBeSaved;
@@ -121,40 +129,11 @@ public:
         // Main loop on local images
         while (!threadShouldExit())
         {
-            // Barcode file downloading
-            if (ftpBarcodeFileContent == "")
-            {
-                if (!readBarcodeFileFromFtp())
-                {
-
-                    showingDlgBox = true;
-                    const auto callback = juce::ModalCallbackFunction::create([this](int result) {
-                        if (result == 0) {
-                            if (juce::JUCEApplicationBase::isStandaloneApp())
-                                juce::JUCEApplicationBase::quit();  // Closing current application
-
-                        }// result == 0 means you click Cancel
-                        if (result == 1) {
-                            showingDlgBox = false;
-                        }// result == 1 means you click OK
-                        });
-
-                    juce::AlertWindow::showOkCancelBox(juce::AlertWindow::WarningIcon,
-                        "No Term file found",
-                        "Try again?",
-                        "OK", "Close", nullptr,
-                        callback
-                    );
-                    while (showingDlgBox)
-                    {
-                        juce::Thread::sleep(DEFAULT_SLEEP);
-                    }
-                }
-            }
                         
             try {
                 // Check the connection
-                if (Network::isConnectedToInternet()) {
+                if (Network::isConnectedToInternet()) 
+                {
                     // Wait till getting lock on images directory
                     if (filesMtx.try_lock()) {
                         // Check if the directory exists, release mutex and continue
@@ -180,150 +159,153 @@ public:
                         if (imgFiles.empty())
                         {
                             // Nothing to do
-                            filesMtx.unlock();
-                            juce::Thread::sleep(DEFAULT_SLEEP);
-                            continue;
+                            filesMtx.unlock();                            
+                            
                         }                       
+                        else
+                        {
 
+                            // Try to upload file by file
+                            try {
+                                if (!ftpClient.Connect(Settings::getInstance().ftpServer.toRawUTF8()))
+                                {
+                                    // Error Ftp server
+                                    filesMtx.unlock();
+                                    juce::Thread::sleep(DEFAULT_SLEEP);
+                                    continue;
+                                }
+                                if (!ftpClient.Login(Settings::getInstance().ftpUser.toRawUTF8(), Settings::getInstance().ftpPassword.toRawUTF8()))
+                                {
+                                    // Error User + Psw
+                                    filesMtx.unlock();
+                                    juce::Thread::sleep(DEFAULT_SLEEP);
+                                    continue;
+                                }
+                                // Back to root folder on ftp
+                                ftpClient.Chdir("/");
 
-                        // Try to upload file by file
-                        try {
-                            if (!ftpClient.Connect(Settings::getInstance().ftpServer.toRawUTF8()))
-                            {
-                                // Error Ftp server
-                                filesMtx.unlock();
-                                juce::Thread::sleep(DEFAULT_SLEEP);
-                                continue;
-                            }
-                            if (!ftpClient.Login(Settings::getInstance().ftpUser.toRawUTF8(), Settings::getInstance().ftpPassword.toRawUTF8()))
-                            {
-                                // Error User + Psw
-                                filesMtx.unlock();
-                                juce::Thread::sleep(DEFAULT_SLEEP);
-                                continue;
-                            }
-                            // Back to root folder on ftp
-                            ftpClient.Chdir("/");
+                                int deepLvl = 0;
 
-                            int deepLvl = 0;
+                                for (int i = 0; i < imgFiles.size(); i++) {
+                                    deepLvl = 0;
+                                    try {
 
-                            for (int i = 0; i < imgFiles.size(); i++) {
-                                deepLvl = 0;
-                                try {                                    
+                                        // Get barcode and field1 and field2 from file name
+                                        auto s = juce::StringArray::fromTokens(imgFiles[i].getFileName(), "_", "\"");
+                                        juce::String barcode = s[s.size() - 4];
+                                        juce::String f2 = s[s.size() - 3];
+                                        juce::String f3 = s[s.size() - 2];
 
-                                    // Get barcode and field1 and field2 from file name
-                                    auto s = juce::StringArray::fromTokens(imgFiles[i].getFileName(), "_", "\"");
-                                    juce::String barcode = s[s.size() - 4];
-                                    juce::String f2 = s[s.size() - 3];
-                                    juce::String f3 = s[s.size() - 2];
-
-                                    // Check if subdir 1 is required by Settings
-                                    if (Settings::getInstance().subdir1) {
-                                        // Check if the folder with the same name of the barcode already exists, otherwise let's create it
-                                        if (!ftpClient.Chdir(barcode.toRawUTF8()))
-                                        {
-                                            ftpClient.Mkdir(barcode.toRawUTF8());
-                                            ftpClient.Chdir(barcode.toRawUTF8());
+                                        // Check if subdir 1 is required by Settings
+                                        if (Settings::getInstance().subdir1) {
+                                            // Check if the folder with the same name of the barcode already exists, otherwise let's create it
+                                            if (!ftpClient.Chdir(barcode.toRawUTF8()))
+                                            {
+                                                ftpClient.Mkdir(barcode.toRawUTF8());
+                                                ftpClient.Chdir(barcode.toRawUTF8());
+                                            }
+                                            deepLvl++;
                                         }
-                                        deepLvl++;
-                                    }
 
-                                    // Check if subdir 2 is required by Settings
-                                    if (Settings::getInstance().field2Txt.length() > 0 // Only if field 2 has been set on Settings
-                                        && Settings::getInstance().subdir2)
-                                    {
-                                        // Check if the folder with the same name of the field2 already exists, otherwise let's create it
-                                        if (!ftpClient.Chdir(f2.toRawUTF8()))
+                                        // Check if subdir 2 is required by Settings
+                                        if (Settings::getInstance().field2Txt.length() > 0 // Only if field 2 has been set on Settings
+                                            && Settings::getInstance().subdir2)
                                         {
-                                            ftpClient.Mkdir(f2.toRawUTF8());
-                                            ftpClient.Chdir(f2.toRawUTF8());
+                                            // Check if the folder with the same name of the field2 already exists, otherwise let's create it
+                                            if (!ftpClient.Chdir(f2.toRawUTF8()))
+                                            {
+                                                ftpClient.Mkdir(f2.toRawUTF8());
+                                                ftpClient.Chdir(f2.toRawUTF8());
+                                            }
+                                            deepLvl++;
                                         }
-                                        deepLvl++;
-                                    }
 
-                                    // Check if subdir 3 is required by Settings
-                                    if (Settings::getInstance().field3Txt.length() > 0 // Only if field 3 has been set on Settings
-                                        && Settings::getInstance().subdir3)
-                                    {
-                                        // Check if the folder with the same name of the field3 already exists, otherwise let's create it
-                                        if (!ftpClient.Chdir(f3.toRawUTF8()))
+                                        // Check if subdir 3 is required by Settings
+                                        if (Settings::getInstance().field3Txt.length() > 0 // Only if field 3 has been set on Settings
+                                            && Settings::getInstance().subdir3)
                                         {
-                                            ftpClient.Mkdir(f3.toRawUTF8());
-                                            ftpClient.Chdir(f3.toRawUTF8());
+                                            // Check if the folder with the same name of the field3 already exists, otherwise let's create it
+                                            if (!ftpClient.Chdir(f3.toRawUTF8()))
+                                            {
+                                                ftpClient.Mkdir(f3.toRawUTF8());
+                                                ftpClient.Chdir(f3.toRawUTF8());
+                                            }
+                                            deepLvl++;
                                         }
-                                        deepLvl++;
-                                    }
 
 
 
 
-                                    // Begin the file uploading core
+                                        // Begin the file uploading core
+
+                                        // Check if this imgage already exists on the ftp and delete it if yes
+                                        ftpClient.Delete(imgFiles[i].getFileName().toRawUTF8());
+
+                                        // Reading i-file content
+                                        auto stream = imgFiles[i].createInputStream();
+
+                                        // Open the file on the ftserver
+                                        auto ftpHandle = ftpClient.RawOpen(imgFiles[i].getFileName().toRawUTF8(), ftplib::accesstype::filewrite, ftplib::transfermode::image);
+
+                                        juce::MemoryBlock mb;
+                                        stream->readIntoMemoryBlock(mb);
 
 
-                                    // Reading i-file content
-                                    auto stream = imgFiles[i].createInputStream();
-
-                                    // Open the file on the ftserver
-                                    auto ftpHandle = ftpClient.RawOpen(imgFiles[i].getFileName().toRawUTF8(), ftplib::accesstype::filewrite, ftplib::transfermode::image);
-
-                                    juce::MemoryBlock mb;
-                                    stream->readIntoMemoryBlock(mb);
-
-                                    // Uploading image content                                 
-                                    if (!ftpClient.RawWrite(mb.getData(), mb.getSize(), ftpHandle))
-                                    {
-                                        // Error upload
-                                    }
-                                    else {
-                                        // Upload ok
-                                        // Delete local file copy
-                                        if (imgFiles[i].deleteFile())
+                                        // Uploading image content                                 
+                                        if (!ftpClient.RawWrite(mb.getData(), mb.getSize(), ftpHandle))
                                         {
-                                            // Delete ok
+                                            // Error upload
                                         }
-                                        else
+                                        else {
+                                            // Upload ok
+                                            // Delete local file copy
+                                            if (imgFiles[i].deleteFile())
+                                            {
+                                                // Delete ok
+                                            }
+                                            else
+                                            {
+                                                // Local delete error
+                                            }
+                                        }
+
+                                        ftpClient.RawClose(ftpHandle);
+
+                                        // Get back to the root folder
+                                        for (int k = 0; k < deepLvl; k++)
                                         {
-                                            // Local delete error
+                                            ftpClient.Chdir("../");
+                                        }
+
+
+
+                                    }
+                                    catch (exception e) {
+                                        // if any fails, move forward with other files
+                                        cout << "Exception during upload: " << e.what();
+                                        // Get back to the root folder
+                                        for (int k = 0; k < deepLvl; k++)
+                                        {
+                                            ftpClient.Chdir("../");
                                         }
                                     }
-
-                                    ftpClient.RawClose(ftpHandle);
-
-                                    // Get back to the root folder
-                                    for (int k = 0; k < deepLvl; k++)
-                                    {
-                                        ftpClient.Chdir("../");
-                                    }
-
-                                    
 
                                 }
-                                catch (exception e) {
-                                    // if any fails, move forward with other files
-                                    cout << "Exception during upload: " << e.what();
-                                    // Get back to the root folder
-                                    for (int k = 0; k < deepLvl; k++)
-                                    {
-                                        ftpClient.Chdir("../");
-                                    }
-                                }
-
-                            }                           
 
 
-                            // Closing FTP tunnel
-                            ftpClient.Quit();
+                                // Closing FTP tunnel
+                                ftpClient.Quit();
+                            }
+                            catch (exception e) {
+                                // FTP connection error
+                                cout << "Error";
+                            }
+                            filesMtx.unlock();
                         }
-                        catch (exception e) {
-                            // FTP connection error
-                            cout << "Error";
-                        }
-                        filesMtx.unlock();
                     }
                 }
                     
-                // Attendo 10 secondi prima di ripartire con il while
-                juce::Thread::sleep(DEFAULT_SLEEP);
+                
                 
             }
             catch (exception e)
@@ -331,6 +313,39 @@ public:
                 // Errore sullo sleep
                 filesMtx.unlock();
             }
+
+            // Barcode file downloading
+            if (ftpBarcodeFileContent == "")
+            {
+                if (!readBarcodeFileFromFtp())
+                {
+
+                    showingDlgBox = true;
+                    const auto callback = juce::ModalCallbackFunction::create([this](int result) {
+                        if (result == 0) {
+                            if (juce::JUCEApplicationBase::isStandaloneApp())
+                                juce::JUCEApplicationBase::quit();  // Closing current application
+
+                        }// result == 0 means you click Cancel
+                        if (result == 1) {
+                            showingDlgBox = false;
+                        }// result == 1 means you click OK
+                        });
+
+                    juce::AlertWindow::showOkCancelBox(juce::AlertWindow::WarningIcon,
+                        "No Term file found",
+                        "Try again?",
+                        "Yes", "Close", nullptr,
+                        callback
+                    );
+                    while (showingDlgBox)
+                    {
+                        juce::Thread::sleep(DEFAULT_SLEEP);
+                    }
+                }
+            }
+            // Attendo 1 secondo prima di ripartire con il while
+            juce::Thread::sleep(DEFAULT_SLEEP);
             
         }
     }

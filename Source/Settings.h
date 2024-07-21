@@ -51,6 +51,7 @@ public:
     uint16_t maxImages;
     bool deleteImgBeforeReset;
     int cameraIndex;
+    float cameraVisualizationScalingFactor;
 
 
     // Delete copy constructor and assignment operation
@@ -108,6 +109,7 @@ private:
             jsonObject->setProperty("imgCompression", 85);
             jsonObject->setProperty("imgZoom", 100);
             jsonObject->setProperty("cameraIndex", 0);
+            jsonObject->setProperty("cameraVisualizationScalingFactor", 2);
 
             // FTP settings
             jsonObject->setProperty("ftpServer", "ftp.agribologna.it:21");
@@ -164,6 +166,7 @@ private:
             imgCompression = static_cast<uint16_t>(int(parsedJson["imgCompression"]));
             imgZoom = static_cast<uint16_t>(int(parsedJson["imgZoom"]));
             cameraIndex = static_cast<uint16_t>(int(parsedJson["cameraIndex"]));
+            cameraVisualizationScalingFactor = static_cast<float>(float(parsedJson["cameraVisualizationScalingFactor"]));
 
             ftpServer = parsedJson["ftpServer"];
             ftpUser = parsedJson["ftpUser"];

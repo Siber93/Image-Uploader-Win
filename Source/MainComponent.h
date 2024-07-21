@@ -23,8 +23,7 @@ public:
 private:
     //==============================================================================
     // Your private member variables go here...
-    juce::Image cameraView = { juce::Image::PixelFormat::RGB,640, 480, true };
-    Camera cam;
+    juce::Image cameraImage = { juce::Image::PixelFormat::RGB,640, 480, true };
     ImageUploaderService imgUploaderService;
 
     juce::TextButton addImgBtn;
@@ -32,9 +31,12 @@ private:
     juce::TextButton resetBtn;
     juce::ImageButton* imageToSend;
     int imageIndex = 0;
-
+    juce::CameraDevice* cameraDevice;
+    juce::Component* cameraVideoComp;
+    Camera camListener;
+    bool  firstResizing = false;
 private:
-    std::unique_ptr<juce::CameraDevice> cameraDevice;
+    //std::unique_ptr<juce::CameraDevice> cameraDevice;
 
     void timerCallback() override;
 

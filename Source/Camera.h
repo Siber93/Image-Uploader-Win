@@ -19,13 +19,14 @@ class Camera : public juce::CameraDevice::Listener //public juce::Thread,
 {
 
 private:
-    juce::Image frameImg = { juce::Image::PixelFormat::RGB,640, 480, true };
     std::mutex frameMtx;
+    juce::Image frameImg = { juce::Image::PixelFormat::RGB,640, 480, true };
     //juce::Component* context;
 
 
 public:
-
+    uint16_t iWidth = 0;
+    uint16_t iHeight = 0;
     /*Camera(juce::Component* _ctx) : Thread("My Camera Thread")
     {
         context = _ctx;
@@ -47,6 +48,8 @@ public:
         // This method is called whenever a new frame is available from the camera
         frameMtx.lock();
         copyImageData(image, frameImg);
+        iHeight = image.getHeight();
+        iWidth = image.getWidth();
         frameMtx.unlock();
         //cameraView = image;
         //repaint();
@@ -181,26 +184,25 @@ public:
 
     void copyImageData(const juce::Image& sourceImage, juce::Image& destImage) {
         // Check if the source and destination images are of the same size and format
-        if (sourceImage.getWidth() == destImage.getWidth() &&
-            sourceImage.getHeight() == destImage.getHeight() &&
-            sourceImage.getFormat() == destImage.getFormat()) {
+        if (sourceImage.getWidth() != destImage.getWidth() ||
+            sourceImage.getHeight() != destImage.getHeight() ||
+            sourceImage.getFormat() != destImage.getFormat()) {
 
-            // Access the raw image data
-            juce::Image::BitmapData sourceData(sourceImage, juce::Image::BitmapData::readOnly);
-            juce::Image::BitmapData destData(destImage, juce::Image::BitmapData::writeOnly);
-
-            // Copy pixel data
-            for (int y = 0; y < sourceImage.getHeight(); ++y) {
-                for (int x = 0; x < sourceImage.getWidth(); ++x) {
-                    // Directly copy the pixel data
-                    destData.setPixelColour(x, y, sourceData.getPixelColour(x, y));
-                }
-            }
-        }
-        else {
             destImage = { sourceImage.getFormat(), sourceImage.getWidth() ,sourceImage.getHeight(),  true};
             // Handle error: incompatible image formats or sizes
-            juce::Logger::writeToLog("Error: Source and destination images are not compatible.");
+            //juce::Logger::writeToLog("Error: Source and destination images are not compatible.");
+        }
+
+        // Access the raw image data
+        juce::Image::BitmapData sourceData(sourceImage, juce::Image::BitmapData::readOnly);
+        juce::Image::BitmapData destData(destImage, juce::Image::BitmapData::writeOnly);
+
+        // Copy pixel data
+        for (int y = 0; y < sourceImage.getHeight(); ++y) {
+            for (int x = 0; x < sourceImage.getWidth(); ++x) {
+                // Directly copy the pixel data
+                destData.setPixelColour(x, y, sourceData.getPixelColour(x, y));
+            }
         }
     }
 

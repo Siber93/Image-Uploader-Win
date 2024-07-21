@@ -30,9 +30,9 @@ MainComponent::MainComponent()
                 "OK");
         }
         else {
-            
+            camListener.getImage(&cameraImage);
             // Set the content for the new image
-            imageToSend[imageIndex].setImages(false, true, true, cameraView.createCopy(), 1, juce::Colours::transparentWhite, cameraView.createCopy(), 0.5f, juce::Colours::transparentWhite, cameraView.createCopy(), 0.3f, juce::Colours::transparentWhite);
+            imageToSend[imageIndex].setImages(false, true, true, cameraImage.createCopy(), 1, juce::Colours::transparentWhite, cameraImage.createCopy(), 0.5f, juce::Colours::transparentWhite, cameraImage.createCopy(), 0.3f, juce::Colours::transparentWhite);
             
             // Let's create the imagebutton onclick routine to remove this image from the list
             int ind = imageIndex;
@@ -76,7 +76,7 @@ MainComponent::MainComponent()
     resetBtn.setButtonText("Reset");
     resetBtn.onClick = [this]() {
         // Stop service thread
-        imgUploaderService.stopThread(2000);
+        //imgUploaderService.stopThread(2000);
 
         // Clear images
         for (int i = 0; i < imageIndex; i++)
@@ -89,7 +89,8 @@ MainComponent::MainComponent()
         
         
         // Restart service thread
-        imgUploaderService.startThread();
+        //imgUploaderService.startThread();
+        imgUploaderService.reset();
     };
     addAndMakeVisible(resetBtn);
 
@@ -132,7 +133,7 @@ MainComponent::MainComponent()
                 for (int i = 0; i < imageIndex; i++)
                 {
                     juce::String imageFileName = id_doc + formattedTime + "_" + Settings::getInstance().nTerm + "_" + part[0] + "_" + part[1] + "_" + part[2] + "_" + juce::String(i + 1) + ".jpg";
-                    if (!saveImageToFile(getClippedImage(imageToSend[i].getNormalImage(),100 - Settings::getInstance().imgZoom), imageFileName, (100 - Settings::getInstance().imgCompression) / 100))
+                    if (!saveImageToFile(getClippedImage(imageToSend[i].getNormalImage(),100 - Settings::getInstance().imgZoom), imageFileName, (100.f - Settings::getInstance().imgCompression) / 100.f))
                     {
                         juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
                             "Error during saving",
@@ -164,17 +165,17 @@ MainComponent::MainComponent()
     //cam = new Camera(this);
     //cam->startThread();
 
-    cameraDevice.reset(juce::CameraDevice::openDevice(Settings::getInstance().cameraIndex , 128, 64, 10000, 10000, true));
+    cameraDevice = juce::CameraDevice::openDevice(Settings::getInstance().cameraIndex , 128, 64, 10000, 10000, true);
 
     if (cameraDevice != nullptr)
     {
        
 
-        // Connect the camera to the VideoComponent
-        if (auto* camera = cameraDevice.get())
-        {
-            camera->addListener(&cam);
-        }
+        // Connect the camera to the VideoComponent        
+        cameraDevice->addListener(&camListener);
+        cameraVideoComp = cameraDevice->createViewerComponent();
+        addAndMakeVisible(cameraVideoComp);
+        
     }
 
     // Run the FTP Client Service thread
@@ -183,7 +184,7 @@ MainComponent::MainComponent()
     setSize(600, 400);
 
     // Run the Camera ui picture refreshing Thread
-    startTimer(40);
+    startTimer(100);
 
     
 }
@@ -242,6 +243,11 @@ void MainComponent::timerCallback()
     // Repaint the image sector only
     //repaint(0, 0, cameraView.getWidth() * getWidth() / 1000, cameraView.getHeight() * getWidth() / 1000);
     repaint();
+    if (!firstResizing && camListener.iHeight != 0)
+    {
+        resized();
+        firstResizing = true;
+    }
 }
 
 //==============================================================================
@@ -285,10 +291,10 @@ void MainComponent::paint (juce::Graphics& g)
 
 
     // Refresh Camera image
-    cam.getImage(&cameraView);
-    if(&cameraView !=nullptr)
-        g.drawImageAt(cameraView.rescaled(cameraView.getWidth() * getHeight() / 1200, cameraView.getHeight() * getHeight() / 1200), 0, 0, false);
-    
+    //cam.getImage(&cameraView);
+    /*if (&cameraView != nullptr)
+        g.drawImageAt(cameraView.rescaled(cameraView.getWidth() / Settings::getInstance().cameraVisualizationScalingFactor, cameraView.getHeight() / Settings::getInstance().cameraVisualizationScalingFactor), 0, 0, false);
+    */
     // Show the busy indicator if the ftp service has not gotten the main file content yet
     if(bc == "")
         getLookAndFeel().drawSpinningWaitAnimation(g, juce::Colours::red, getWidth() / 2-50, getHeight() / 2-50, 100, 100);
@@ -302,6 +308,8 @@ void MainComponent::resized()
     sendImgBtn.setBounds(juce::Rectangle<int>(getWidth() - 80, getHeight() - 80, 60, 60));
     resetBtn.setBounds(juce::Rectangle<int>(getWidth() - 160, getHeight() - 80, 60, 60));
     addImgBtn.setBounds(juce::Rectangle<int>(getWidth() - 80, getHeight() - 180, 60, 60));
+
+    cameraVideoComp->setBounds(0, 0, camListener.iWidth / Settings::getInstance().cameraVisualizationScalingFactor, camListener.iHeight / Settings::getInstance().cameraVisualizationScalingFactor);
     
     for (int i = 0; i < imageIndex; i++)
     {

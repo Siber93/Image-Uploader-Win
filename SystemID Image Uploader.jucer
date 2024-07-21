@@ -5,6 +5,9 @@
               jucerFormatVersion="1" headerPath="..\..\opencv\build\include"
               defines="JUCE_USE_CAMERA=1">
   <MAINGROUP id="j29GVu" name="SystemID Image Uploader">
+    <GROUP id="{610CA01E-3997-171C-25D6-47E127DA4B17}" name="Assets">
+      <FILE id="Yyp3f2" name="logo.png" compile="0" resource="1" file="Assets/logo.png"/>
+    </GROUP>
     <GROUP id="{573CCC1C-1C41-E0C6-8D9C-B6D5D6E9AA42}" name="Source">
       <FILE id="vkD9AL" name="Camera.h" compile="0" resource="0" file="Source/Camera.h"/>
       <FILE id="bvg6Hn" name="Settings.h" compile="0" resource="0" file="Source/Settings.h"/>
@@ -33,7 +36,8 @@
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>
   <EXPORTFORMATS>
     <VS2022 targetFolder="Builds/VisualStudio2022" extraDefs="NOLFS; NOSSL"
-            externalLibraries="..\..\opencv\build\x64\vc16\lib\opencv_world490.lib&#10;..\..\opencv\build\x64\vc16\lib\opencv_world490d.lib">
+            externalLibraries="..\..\opencv\build\x64\vc16\lib\opencv_world490.lib&#10;..\..\opencv\build\x64\vc16\lib\opencv_world490d.lib"
+            smallIcon="Yyp3f2" bigIcon="Yyp3f2">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="SystemID Image Uploader"
                        useRuntimeLibDLL="0"/>
